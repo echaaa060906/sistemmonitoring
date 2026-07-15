@@ -45,14 +45,16 @@ function updateMap(weatherData, coords, iso) {
     // Draw weather zones based on risk
     if (weatherData) {
         // Rain zone
-        L.circle(coords, {
-            color: '#2563eb', fillColor: '#2563eb', fillOpacity: 0.2, radius: 200000
-        }).addTo(map).bindPopup('Rain Zone');
+        if (weatherData.precipitation > 0) {
+            L.circle(coords, {
+                color: '#2563eb', fillColor: '#2563eb', fillOpacity: 0.2, radius: 150000 + (weatherData.precipitation * 10000)
+            }).addTo(map).bindPopup('Rain Zone (' + weatherData.precipitation + 'mm)');
+        }
         
-        if (weatherData.storm_risk > 30) {
-            L.circle([coords[0] + 1, coords[1] + 1], {
-                color: '#dc2626', fillColor: '#dc2626', fillOpacity: 0.4, radius: 150000
-            }).addTo(map).bindPopup('Storm Risk Warning');
+        if (weatherData.storm_risk > 30 || weatherData.gusts > 25) {
+            L.circle([coords[0] + 0.5, coords[1] + 0.5], {
+                color: '#dc2626', fillColor: '#dc2626', fillOpacity: 0.4, radius: 100000 + (weatherData.gusts * 2000)
+            }).addTo(map).bindPopup('Storm/Gust Warning (' + weatherData.gusts + 'kt)');
         }
     }
 }
@@ -146,7 +148,21 @@ function updateMetrics(c) {
     document.getElementById('kpi-currency-name').textContent = c.currency + ' / USD';
     
     document.getElementById('kpi-weather').textContent = c.weather.temp + '°C';
-    document.getElementById('kpi-weather-desc').textContent = 'Wind: ' + c.weather.wind + ' kt';
+    document.getElementById('kpi-weather-desc').innerHTML = `<span style="font-size: 0.75rem; white-space: nowrap;"><i class="bi bi-wind"></i> ${c.weather.wind}kt | <i class="bi bi-cloud-rain"></i> ${c.weather.precipitation || 0}mm</span>`;
+    document.getElementById('kpi-weather-extra').innerHTML = `<span style="font-size: 0.75rem; white-space: nowrap;"><i class="bi bi-tornado"></i> Gust: ${c.weather.gusts || 0}kt</span>`;
+    
+    // Change icon based on precipitation/storm risk
+    const weatherIcon = document.querySelector('#icon-weather i');
+    if (c.weather.storm_risk > 50 || c.weather.precipitation > 5) {
+        weatherIcon.className = 'bi bi-cloud-lightning-rain';
+        document.getElementById('icon-weather').className = 'info-box-icon bg-danger';
+    } else if (c.weather.precipitation > 0) {
+        weatherIcon.className = 'bi bi-cloud-rain';
+        document.getElementById('icon-weather').className = 'info-box-icon bg-info';
+    } else {
+        weatherIcon.className = 'bi bi-cloud-sun';
+        document.getElementById('icon-weather').className = 'info-box-icon bg-primary';
+    }
     
     const risk = c.risk;
     document.getElementById('kpi-risk-val').textContent = risk.total_risk;
@@ -159,6 +175,7 @@ function updateMetrics(c) {
     if (risk.class === 'High') badgeColor = 'bg-danger';
     
     badge.className = 'badge ' + badgeColor;
+    document.getElementById('icon-risk').className = 'info-box-icon ' + badgeColor;
 }
 
 async function loadNewsData() {

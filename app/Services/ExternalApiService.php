@@ -12,26 +12,34 @@ class ExternalApiService
      */
     public function getWeather(float $lat, float $lon): array
     {
-        $cacheKey = "weather_{$lat}_{$lon}";
+        $cacheKey = "weather_v2_{$lat}_{$lon}";
         return Cache::remember($cacheKey, 1800, function () use ($lat, $lon) {
             try {
                 $response = Http::timeout(5)->get("https://api.open-meteo.com/v1/forecast", [
                     'latitude' => $lat,
                     'longitude' => $lon,
-                    'current_weather' => true,
+                    'current' => 'temperature_2m,wind_speed_10m,wind_gusts_10m,precipitation,visibility',
                 ]);
 
                 if ($response->successful()) {
                     $data = $response->json();
-                    $temp = $data['current_weather']['temperature'] ?? 24;
-                    $wind = $data['current_weather']['windspeed'] ?? 10;
+                    $current = $data['current'] ?? [];
                     
-                    // Simple storm risk calculation from wind speed
-                    $stormRisk = $wind > 20 ? rand(60, 90) : rand(10, 45);
+                    $temp = $current['temperature_2m'] ?? 24;
+                    $wind = $current['wind_speed_10m'] ?? 10;
+                    $gusts = $current['wind_gusts_10m'] ?? $wind;
+                    $precip = $current['precipitation'] ?? 0;
+                    $visibility = $current['visibility'] ?? 10000;
+                    
+                    // Storm risk calculation based on gusts and precipitation
+                    $stormRisk = ($gusts > 30 || $precip > 5) ? rand(60, 90) : rand(10, 45);
 
                     return [
                         'temp' => $temp,
                         'wind' => $wind,
+                        'gusts' => $gusts,
+                        'precipitation' => $precip,
+                        'visibility' => $visibility,
                         'storm_risk' => $stormRisk,
                         'source' => 'Open-Meteo'
                     ];
@@ -41,9 +49,48 @@ class ExternalApiService
             }
 
             return [
-                'temp' => 22.4,
-                'wind' => 12.0,
-                'storm_risk' => 30.0,
+                'temp' => rand(20, 30) + (rand(0, 9) / 10), // dynamic mock fallback
+                'wind' => rand(5, 20),
+                'gusts' => rand(10, 30),
+                'precipitation' => 0.0,
+                'visibility' => 10000,
+                'storm_risk' => rand(10, 40),
+                'source' => 'Mock Data (Offline)'
+            ];
+        });
+    }
+
+    /**
+     * Get Marine Data from Open-Meteo API.
+     */
+    public function getMarineData(float $lat, float $lon): array
+    {
+        $cacheKey = "marine_v2_{$lat}_{$lon}";
+        return Cache::remember($cacheKey, 1800, function () use ($lat, $lon) {
+            try {
+                $response = Http::timeout(5)->get("https://marine-api.open-meteo.com/v1/marine", [
+                    'latitude' => $lat,
+                    'longitude' => $lon,
+                    'current' => 'wave_height,ocean_current_velocity',
+                ]);
+
+                if ($response->successful()) {
+                    $data = $response->json();
+                    $current = $data['current'] ?? [];
+                    
+                    return [
+                        'wave_height' => $current['wave_height'] ?? 0,
+                        'ocean_current_velocity' => $current['ocean_current_velocity'] ?? 0,
+                        'source' => 'Open-Meteo Marine'
+                    ];
+                }
+            } catch (\Exception $e) {
+                // Fail-safe mock data
+            }
+
+            return [
+                'wave_height' => 1.2,
+                'ocean_current_velocity' => 0.5,
                 'source' => 'Mock Data (Offline)'
             ];
         });

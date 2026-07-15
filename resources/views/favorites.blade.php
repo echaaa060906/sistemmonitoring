@@ -36,6 +36,24 @@
     <main id="main-content">
         <header id="topbar">
             <div><h5 class="mb-0 fw-bold">Favorite Monitoring List</h5><small class="text-muted">Your saved countries</small></div>
+            
+            <div class="d-flex align-items-center">
+                @auth
+                <div class="dropdown ms-3">
+                    <button class="btn btn-outline-secondary dropdown-toggle shadow-sm" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="bi bi-person-circle"></i> {{ Auth::user()->name }}
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li>
+                            <form action="{{ route('logout') }}" method="POST">
+                                @csrf
+                                <button type="submit" class="dropdown-item"><i class="bi bi-box-arrow-right text-danger"></i> Logout</button>
+                            </form>
+                        </li>
+                    </ul>
+                </div>
+                @endauth
+            </div>
         </header>
         <div class="container-fluid p-4">
             <div class="card p-4 text-center">
@@ -46,5 +64,6 @@
             </div>
         </div>
     </main>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

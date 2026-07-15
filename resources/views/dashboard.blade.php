@@ -102,29 +102,30 @@
             background: #fff;
             box-shadow: 0 0 1px rgba(0,0,0,.125), 0 1px 3px rgba(0,0,0,.2);
             border-radius: 0.25rem;
-            padding: 0.5rem;
-            min-height: 80px;
+            padding: 0.35rem;
+            min-height: 70px;
             margin-bottom: 1.5rem;
         }
         .info-box-icon {
             border-radius: 0.25rem;
             align-items: center;
             display: flex;
-            font-size: 1.8rem;
+            font-size: 1.5rem;
             justify-content: center;
             text-align: center;
-            width: 70px;
+            width: 50px;
             color: #fff;
         }
         .info-box-content {
             display: flex;
             flex-direction: column;
             justify-content: center;
-            padding: 0 10px;
+            padding: 0 8px;
             flex: 1;
+            overflow: hidden;
         }
-        .info-box-text { text-transform: uppercase; font-size: 0.8rem; color: #6c757d; font-weight: 700; }
-        .info-box-number { font-weight: 700; font-size: 1.2rem; color: #343a40; }
+        .info-box-text { text-transform: uppercase; font-size: 0.7rem; color: #6c757d; font-weight: 700; white-space: nowrap; text-overflow: ellipsis; overflow: hidden; }
+        .info-box-number { font-weight: 700; font-size: 1.1rem; color: #343a40; white-space: nowrap; text-overflow: ellipsis; overflow: hidden; }
         
         .bg-info { background-color: #17a2b8 !important; }
         .bg-success { background-color: #28a745 !important; }
@@ -191,6 +192,22 @@
                     <option value="AU">Australia (AU)</option>
                     <option value="US">United States (US)</option>
                 </select>
+
+                @auth
+                <div class="dropdown ms-3">
+                    <button class="btn btn-outline-secondary dropdown-toggle shadow-sm" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="bi bi-person-circle"></i> {{ Auth::user()->name }}
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li>
+                            <form action="{{ route('logout') }}" method="POST">
+                                @csrf
+                                <button type="submit" class="dropdown-item"><i class="bi bi-box-arrow-right text-danger"></i> Logout</button>
+                            </form>
+                        </li>
+                    </ul>
+                </div>
+                @endauth
             </div>
         </header>
 
@@ -205,7 +222,7 @@
             <!-- KPI Row -->
             <div class="row">
                 <!-- Risk Score -->
-                <div class="col-md-4 col-lg-2">
+                <div class="col-sm-6 col-md-4 col-lg-4 col-xl-2">
                     <div class="info-box">
                         <span class="info-box-icon" id="icon-risk"><i class="bi bi-shield-exclamation"></i></span>
                         <div class="info-box-content">
@@ -216,7 +233,7 @@
                     </div>
                 </div>
                 <!-- GDP -->
-                <div class="col-md-4 col-lg-2">
+                <div class="col-sm-6 col-md-4 col-lg-4 col-xl-2">
                     <div class="info-box">
                         <span class="info-box-icon bg-success"><i class="bi bi-bank"></i></span>
                         <div class="info-box-content">
@@ -226,7 +243,7 @@
                     </div>
                 </div>
                 <!-- Inflation -->
-                <div class="col-md-4 col-lg-2">
+                <div class="col-sm-6 col-md-4 col-lg-4 col-xl-2">
                     <div class="info-box">
                         <span class="info-box-icon bg-warning text-dark"><i class="bi bi-graph-up-arrow"></i></span>
                         <div class="info-box-content">
@@ -236,7 +253,7 @@
                     </div>
                 </div>
                 <!-- Population -->
-                <div class="col-md-4 col-lg-2">
+                <div class="col-sm-6 col-md-4 col-lg-4 col-xl-2">
                     <div class="info-box">
                         <span class="info-box-icon bg-info"><i class="bi bi-people"></i></span>
                         <div class="info-box-content">
@@ -246,7 +263,7 @@
                     </div>
                 </div>
                 <!-- Currency -->
-                <div class="col-md-4 col-lg-2">
+                <div class="col-sm-6 col-md-4 col-lg-4 col-xl-2">
                     <div class="info-box">
                         <span class="info-box-icon bg-secondary"><i class="bi bi-cash-coin"></i></span>
                         <div class="info-box-content">
@@ -256,13 +273,14 @@
                     </div>
                 </div>
                 <!-- Weather -->
-                <div class="col-md-4 col-lg-2">
+                <div class="col-sm-6 col-md-4 col-lg-4 col-xl-2">
                     <div class="info-box">
-                        <span class="info-box-icon bg-primary"><i class="bi bi-cloud-sun"></i></span>
+                        <span class="info-box-icon bg-primary" id="icon-weather"><i class="bi bi-cloud-sun"></i></span>
                         <div class="info-box-content">
                             <span class="info-box-text">Weather</span>
                             <span class="info-box-number" id="kpi-weather">--</span>
-                            <small id="kpi-weather-desc" class="text-muted">--</small>
+                            <small id="kpi-weather-desc" class="text-muted text-truncate d-block">--</small>
+                            <small id="kpi-weather-extra" class="text-danger fw-bold text-truncate d-block">--</small>
                         </div>
                     </div>
                 </div>
@@ -344,6 +362,7 @@
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script src="{{ asset('js/global_dashboard.js') }}"></script>
 
 </body>

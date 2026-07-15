@@ -11,17 +11,44 @@
     
     <style>
         :root {
-            --bg-color: #f8f9fa;
-            --sidebar-bg: #1e293b;
-            --sidebar-color: #cbd5e1;
-            --primary: #2563eb;
+            --bg-color: #f4f6f9;
+            --sidebar-bg: #343a40;
+            --primary-color: #007bff;
         }
-        body { font-family: 'Inter', sans-serif; background-color: var(--bg-color); display: flex; width: 100vw; height: 100vh; overflow: hidden; }
-        #sidebar { width: 250px; background: var(--sidebar-bg); color: var(--sidebar-color); display: flex; flex-direction: column; flex-shrink: 0; }
-        .sidebar-brand { padding: 1.5rem 1.25rem; font-size: 1.1rem; font-weight: 700; color: #fff; border-bottom: 1px solid rgba(255,255,255,0.1); }
-        .sidebar-nav { padding: 1rem 0; list-style: none; margin: 0; }
-        .sidebar-link { display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem 1.25rem; color: var(--sidebar-color); text-decoration: none; font-weight: 500; }
-        .sidebar-link:hover, .sidebar-link.active { background: rgba(255,255,255,0.05); color: #fff; border-left: 3px solid var(--primary); }
+        body { font-family: 'Inter', sans-serif; background-color: var(--bg-color); display: flex; width: 100vw; height: 100vh; overflow: hidden; margin: 0; }
+        
+        /* Sidebar (Standard Admin Style) */
+        #sidebar {
+            width: 250px;
+            background-color: var(--sidebar-bg);
+            color: #fff;
+            display: flex;
+            flex-direction: column;
+            flex-shrink: 0;
+            box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+        }
+        .sidebar-brand {
+            padding: 1.25rem 1rem;
+            font-size: 1.1rem;
+            font-weight: 700;
+            text-align: center;
+            border-bottom: 1px solid #4f5962;
+            background-color: #212529;
+        }
+        .sidebar-nav { padding: 0; list-style: none; margin-top: 1rem; }
+        .sidebar-link {
+            display: block;
+            padding: 0.8rem 1.25rem;
+            color: #c2c7d0;
+            text-decoration: none;
+            transition: 0.2s;
+        }
+        .sidebar-link i { margin-right: 10px; width: 20px; text-align: center; }
+        .sidebar-link:hover, .sidebar-link.active {
+            color: #fff;
+            background-color: rgba(255,255,255,0.1);
+            border-left: 4px solid var(--primary-color);
+        }
         
         #main-content { flex: 1; display: flex; flex-direction: column; }
         #topbar { background: #fff; padding: 1rem 1.5rem; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; }
@@ -34,14 +61,16 @@
 </head>
 <body>
     <aside id="sidebar">
-        <div class="sidebar-brand"><i class="bi bi-globe-americas"></i> RiskIntel</div>
+        <div class="sidebar-brand">
+            <i class="bi bi-globe-americas"></i> SCM Project
+        </div>
         <ul class="sidebar-nav">
-            <li><a href="/" class="sidebar-link"><i class="bi bi-grid-1x2"></i> Country Dashboard</a></li>
+            <li><a href="/" class="sidebar-link"><i class="bi bi-speedometer2"></i> Global Dashboard</a></li>
             <li><a href="/map" class="sidebar-link"><i class="bi bi-map"></i> Peta Rute</a></li>
             <li><a href="/ports" class="sidebar-link active"><i class="bi bi-geo-alt"></i> Port Locations</a></li>
-            <li><a href="/comparison" class="sidebar-link"><i class="bi bi-arrow-left-right"></i> Comparison Engine</a></li>
-            <li><a href="/favorites" class="sidebar-link"><i class="bi bi-star"></i> Watchlist</a></li>
-            <li><a href="/admin" class="sidebar-link"><i class="bi bi-gear"></i> Admin Dashboard</a></li>
+            <li><a href="/comparison" class="sidebar-link"><i class="bi bi-intersect"></i> Comparison</a></li>
+            <li><a href="/favorites" class="sidebar-link"><i class="bi bi-star"></i> Favorites List</a></li>
+            <li><a href="/admin" class="sidebar-link"><i class="bi bi-gear"></i> Admin Panel</a></li>
         </ul>
     </aside>
 
@@ -50,6 +79,24 @@
             <div>
                 <h5 class="mb-0 fw-bold">Port Location Dashboard</h5>
                 <small class="text-muted">Global Port Directory</small>
+            </div>
+            
+            <div class="d-flex align-items-center">
+                @auth
+                <div class="dropdown ms-3">
+                    <button class="btn btn-outline-secondary dropdown-toggle shadow-sm" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="bi bi-person-circle"></i> {{ Auth::user()->name }}
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li>
+                            <form action="{{ route('logout') }}" method="POST">
+                                @csrf
+                                <button type="submit" class="dropdown-item"><i class="bi bi-box-arrow-right text-danger"></i> Logout</button>
+                            </form>
+                        </li>
+                    </ul>
+                </div>
+                @endauth
             </div>
         </header>
 
@@ -69,14 +116,14 @@
     </main>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         const map = L.map('port-map').setView([20, 0], 3);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 18 }).addTo(map);
 
         let markers = [];
 
-        document.getElementById('btn-search').addEventListener('click', async () => {
-            const query = document.getElementById('port-search').value;
+        async function loadPorts(query = '') {
             const res = document.getElementById('search-results');
             res.innerHTML = '<div class="spinner-border spinner-border-sm text-primary"></div>';
             
@@ -98,27 +145,48 @@
                     html += `<li class="list-group-item p-1 border-0"><a href="#" onclick="flyToPort(${p.latitude}, ${p.longitude})" class="text-decoration-none">${p.name} (${p.country})</a></li>`;
                     
                     const marker = L.marker([p.latitude, p.longitude]).addTo(map)
-                        .bindPopup(`<b>${p.name}</b><br>${p.country}`);
+                        .bindPopup(`<b>${p.name}</b><br>${p.country}<br><div id="marine-${p.id || p.name.replace(/\s+/g,'')}"><small class="text-primary"><i class="spinner-border spinner-border-sm"></i> Loading marine data...</small></div>`);
+                    
+                    marker.on('popupopen', async function() {
+                        const divId = `marine-${p.id || p.name.replace(/\s+/g,'')}`;
+                        const div = document.getElementById(divId);
+                        if (div && !div.dataset.loaded) {
+                            try {
+                                const mRes = await fetch(`/api/marine?lat=${p.latitude}&lon=${p.longitude}`);
+                                const mData = await mRes.json();
+                                div.innerHTML = `
+                                    <hr class="my-1">
+                                    <div class="small">
+                                        <i class="bi bi-water text-info"></i> Wave Height: <b>${mData.wave_height} m</b><br>
+                                        <i class="bi bi-compass text-secondary"></i> Current: <b>${mData.ocean_current_velocity} km/h</b>
+                                    </div>
+                                `;
+                                div.dataset.loaded = 'true';
+                            } catch (e) {
+                                div.innerHTML = '<span class="text-danger small">Failed to load marine data</span>';
+                            }
+                        }
+                    });
+                    
                     markers.push(marker);
                 });
                 html += '</ul>';
                 res.innerHTML = html;
-
-                if (ports.length > 0) {
-                    map.flyTo([ports[0].latitude, ports[0].longitude], 5);
-                }
-            } catch(e) {
-                res.innerHTML = '<div class="text-danger small">Error fetching ports.</div>';
+            } catch (error) {
+                res.innerHTML = '<div class="text-danger small">Error loading data.</div>';
             }
+        }
+
+        document.getElementById('btn-search').addEventListener('click', () => {
+            loadPorts(document.getElementById('port-search').value);
         });
+
+        // Load all ports on startup
+        loadPorts();
 
         window.flyToPort = function(lat, lng) {
             map.flyTo([lat, lng], 10);
         }
-        
-        // Initial load for demo
-        document.getElementById('port-search').value = "Tanjung";
-        document.getElementById('btn-search').click();
     </script>
 </body>
 </html>

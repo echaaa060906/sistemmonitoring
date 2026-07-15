@@ -122,7 +122,20 @@ class ApiController extends Controller
                   ->orWhere('country', 'LIKE', "%{$search}%");
         }
 
-        return response()->json($query->get());
+        return response()->json($query->limit(500)->get());
+    }
+
+    /**
+     * GET /api/marine
+     * Retrieve marine weather data for given coordinates.
+     */
+    public function marine(Request $request): JsonResponse
+    {
+        $lat = (float) $request->query('lat', 0);
+        $lon = (float) $request->query('lon', 0);
+        
+        $marineData = $this->apiService->getMarineData($lat, $lon);
+        return response()->json($marineData);
     }
 
     /**
@@ -195,7 +208,7 @@ class ApiController extends Controller
             'ID' => [-6.20, 106.84],
             'DE' => [52.52, 13.40],
             'CN' => [39.90, 116.40],
-            'AU' => [-35.28, 149.13],
+            'AU' => [-33.86, 151.20], // Sydney
             'US' => [38.90, -77.03],
         ];
 

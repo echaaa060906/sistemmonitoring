@@ -3,29 +3,38 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ApiController;
 
-Route::get('/', function () {
-    return view('dashboard');
-});
+use App\Http\Controllers\AuthController;
 
-Route::get('/map', function () {
-    return view('map');
-});
+Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
+Route::post('/login', [AuthController::class, 'login']);
+Route::get('/register', [AuthController::class, 'showRegister'])->name('register');
+Route::post('/register', [AuthController::class, 'register']);
+Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
-// Comparison Engine view (PDF Requirement 8)
-Route::get('/comparison', function () {
-    return view('comparison');
-});
+Route::middleware('auth')->group(function () {
+    Route::get('/', function () {
+        return view('dashboard');
+    });
 
-Route::get('/ports', function () {
-    return view('ports');
-});
+    Route::get('/map', function () {
+        return view('map');
+    });
 
-Route::get('/favorites', function () {
-    return view('favorites');
-});
+    Route::get('/comparison', function () {
+        return view('comparison');
+    });
 
-Route::get('/admin', function () {
-    return view('admin');
+    Route::get('/ports', function () {
+        return view('ports');
+    });
+
+    Route::get('/favorites', function () {
+        return view('favorites');
+    });
+
+    Route::get('/admin', function () {
+        return view('admin');
+    });
 });
 
 Route::get('/seed-data', function () {
