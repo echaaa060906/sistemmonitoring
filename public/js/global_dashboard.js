@@ -122,11 +122,32 @@ async function loadDashboardData() {
     if (loader) loader.style.display = 'flex';
     
     try {
-        const res = await fetch('/api/countries');
-        const data = await res.json();
+        const select = document.getElementById('countrySelect');
         
-        const countryData = data.find(c => c.iso_code === currentCountry);
-        if (countryData) {
+        // Fetch country list if dropdown is empty
+        if (select.options.length === 0) {
+            const listRes = await fetch('/api/countries');
+            const listData = await listRes.json();
+            
+            select.innerHTML = '';
+            listData.forEach(c => {
+                const opt = document.createElement('option');
+                opt.value = c.iso_code;
+                opt.textContent = `${c.name} (${c.iso_code})`;
+                select.appendChild(opt);
+            });
+            
+            if (!listData.find(c => c.iso_code === currentCountry)) {
+                 currentCountry = listData[0].iso_code;
+            }
+            select.value = currentCountry;
+        }
+
+        // Fetch detailed data for selected country
+        const res = await fetch('/api/country/' + currentCountry);
+        const countryData = await res.json();
+        
+        if (countryData && !countryData.error) {
             updateMetrics(countryData);
             updateMap(countryData.weather, getCoords(currentCountry), currentCountry);
             updateCharts(countryData);
@@ -139,9 +160,22 @@ async function loadDashboardData() {
 }
 
 function updateMetrics(c) {
-    document.getElementById('kpi-gdp').textContent = '$' + (c.gdp / 1e12).toFixed(2) + 'T';
+    function formatMoney(val) {
+        if (!val) return 'N/A';
+        if (val >= 1e12) return '$' + (val / 1e12).toFixed(2) + 'T';
+        if (val >= 1e9) return '$' + (val / 1e9).toFixed(1) + 'B';
+        return '$' + (val / 1e6).toFixed(1) + 'M';
+    }
+
+    document.getElementById('kpi-gdp').textContent = formatMoney(c.gdp);
     document.getElementById('kpi-inflation').textContent = c.inflation.toFixed(1) + '%';
     document.getElementById('kpi-population').textContent = (c.population / 1e6).toFixed(1) + 'M';
+    document.getElementById('kpi-export').textContent = formatMoney(c.export);
+    document.getElementById('kpi-import').textContent = formatMoney(c.import);
+    
+    document.getElementById('country-meta').style.display = 'inline-block';
+    document.getElementById('kpi-region').innerHTML = `<i class="bi bi-globe"></i> ${c.region || 'N/A'}`;
+    document.getElementById('kpi-language').innerHTML = `<i class="bi bi-chat-left-text"></i> ${c.language || 'N/A'}`;
     
     const fx = c.exchange_rate;
     document.getElementById('kpi-currency-rate').textContent = fx < 100 ? fx.toFixed(2) : fx.toFixed(0);

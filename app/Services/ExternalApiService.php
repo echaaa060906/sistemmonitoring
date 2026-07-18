@@ -101,49 +101,72 @@ class ExternalApiService
      */
     public function getWorldBankData(string $countryIso2): array
     {
-        $cacheKey = "worldbank_{$countryIso2}";
+        $cacheKey = "worldbank_v4_{$countryIso2}";
         return Cache::remember($cacheKey, 86400, function () use ($countryIso2) {
             try {
                 // World bank returns data in array format: [ {page, pages, per_page, total}, [ {indicator, country, countryiso3code, date, value, unit, obs_status, decimal} ] ]
                 // NY.GDP.MKTP.CD (GDP current USD)
                 $gdpResponse = Http::timeout(5)->get("https://api.worldbank.org/v2/country/{$countryIso2}/indicator/NY.GDP.MKTP.CD", [
                     'format' => 'json',
-                    'per_page' => 1
+                    'per_page' => 5
                 ]);
                 
                 // FP.CPI.TOTL.ZG (Inflation, consumer prices annual %)
                 $infResponse = Http::timeout(5)->get("https://api.worldbank.org/v2/country/{$countryIso2}/indicator/FP.CPI.TOTL.ZG", [
                     'format' => 'json',
-                    'per_page' => 1
+                    'per_page' => 5
                 ]);
 
                 // SP.POP.TOTL (Total population)
                 $popResponse = Http::timeout(5)->get("https://api.worldbank.org/v2/country/{$countryIso2}/indicator/SP.POP.TOTL", [
                     'format' => 'json',
-                    'per_page' => 1
+                    'per_page' => 5
+                ]);
+                
+                // NE.EXP.GNFS.CD (Exports of goods and services, current US$)
+                $expResponse = Http::timeout(5)->get("https://api.worldbank.org/v2/country/{$countryIso2}/indicator/NE.EXP.GNFS.CD", [
+                    'format' => 'json',
+                    'per_page' => 5
+                ]);
+                
+                // NE.IMP.GNFS.CD (Imports of goods and services, current US$)
+                $impResponse = Http::timeout(5)->get("https://api.worldbank.org/v2/country/{$countryIso2}/indicator/NE.IMP.GNFS.CD", [
+                    'format' => 'json',
+                    'per_page' => 5
                 ]);
 
                 $gdp = null;
                 $inflation = null;
                 $population = null;
+                $export = null;
+                $import = null;
 
-                if ($gdpResponse->successful()) {
-                    $gdpData = $gdpResponse->json();
-                    $gdp = $gdpData[1][0]['value'] ?? null;
-                }
-                if ($infResponse->successful()) {
-                    $infData = $infResponse->json();
-                    $inflation = $infData[1][0]['value'] ?? null;
-                }
-                if ($popResponse->successful()) {
-                    $popData = $popResponse->json();
-                    $population = $popData[1][0]['value'] ?? null;
-                }
+                $getFirstNonNull = function($response) {
+                    if ($response->successful()) {
+                        $data = $response->json();
+                        if (isset($data[1]) && is_array($data[1])) {
+                            foreach ($data[1] as $item) {
+                                if (!is_null($item['value'])) {
+                                    return $item['value'];
+                                }
+                            }
+                        }
+                    }
+                    return null;
+                };
+
+                $gdp = $getFirstNonNull($gdpResponse);
+                $inflation = $getFirstNonNull($infResponse);
+                $population = $getFirstNonNull($popResponse);
+                $export = $getFirstNonNull($expResponse);
+                $import = $getFirstNonNull($impResponse);
 
                 return [
                     'gdp' => $gdp,
                     'inflation' => $inflation ? round($inflation, 2) : null,
                     'population' => $population,
+                    'export' => $export,
+                    'import' => $import,
                     'source' => 'World Bank API'
                 ];
             } catch (\Exception $e) {
@@ -154,7 +177,51 @@ class ExternalApiService
                 'gdp' => null,
                 'inflation' => null,
                 'population' => null,
+                'export' => null,
+                'import' => null,
                 'source' => 'Mock Data (Offline)'
+            ];
+        });
+    }
+
+    /**
+     * Get Country details from REST Countries API.
+     */
+    public function getRestCountriesData(string $countryIso2): array
+    {
+        $cacheKey = "restcountries_v2_{$countryIso2}";
+        return Cache::remember($cacheKey, 86400, function () use ($countryIso2) {
+            try {
+                $response = Http::timeout(5)->get("https://restcountries.com/v3.1/alpha/{$countryIso2}");
+                if ($response->successful()) {
+                    $data = $response->json();
+                    if (is_array($data) && count($data) > 0) {
+                        $country = $data[0];
+                        
+                        // Parse languages
+                        $languages = $country['languages'] ?? [];
+                        $langList = empty($languages) ? 'N/A' : implode(', ', array_values($languages));
+                        
+                        // Parse region
+                        $region = $country['region'] ?? 'N/A';
+                        $subregion = $country['subregion'] ?? '';
+                        $fullRegion = $subregion ? "{$region} ({$subregion})" : $region;
+                        
+                        return [
+                            'region' => $fullRegion,
+                            'language' => $langList,
+                            'source' => 'REST Countries API'
+                        ];
+                    }
+                }
+            } catch (\Exception $e) {
+                // Fallback
+            }
+            
+            return [
+                'region' => null,
+                'language' => null,
+                'source' => 'Mock Data'
             ];
         });
     }
@@ -193,7 +260,7 @@ class ExternalApiService
      */
     public function getGNews(string $query = 'supply chain logistics'): array
     {
-        $cacheKey = "gnews_en8_" . md5($query); // bypass old cache
+        $cacheKey = "gnews_en9_" . md5($query); // bypass old cache
         return Cache::remember($cacheKey, 7200, function () use ($query) {
             $apiKey = env('GNEWS_API_KEY');
             if (!$apiKey || $apiKey === 'YOUR_GNEWS_API_KEY_HERE') {

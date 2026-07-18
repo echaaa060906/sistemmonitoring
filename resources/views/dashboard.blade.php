@@ -181,16 +181,16 @@
             <div>
                 <h4 class="mb-0 text-dark">Global Country Dashboard</h4>
                 <small class="text-muted">Supply Chain Risk Monitoring</small>
+                <div class="mt-1" id="country-meta" style="display: none;">
+                    <span class="badge bg-secondary me-1" id="kpi-region"><i class="bi bi-globe"></i> --</span>
+                    <span class="badge bg-secondary" id="kpi-language"><i class="bi bi-chat-left-text"></i> --</span>
+                </div>
             </div>
             
             <div class="d-flex align-items-center">
                 <label for="countrySelect" class="me-2 fw-bold text-secondary">Pilih Negara:</label>
                 <select id="countrySelect" class="form-select shadow-sm" style="width: 200px;">
-                    <option value="ID">Indonesia (ID)</option>
-                    <option value="DE">Germany (DE)</option>
-                    <option value="CN">China (CN)</option>
-                    <option value="AU">Australia (AU)</option>
-                    <option value="US">United States (US)</option>
+                    <!-- Options populated via JS -->
                 </select>
 
                 @auth
@@ -222,59 +222,79 @@
             <!-- KPI Row -->
             <div class="row">
                 <!-- Risk Score -->
-                <div class="col-sm-6 col-md-4 col-lg-4 col-xl-2">
-                    <div class="info-box">
+                <div class="col-sm-6 col-md-4 col-lg-4 col-xl-2 mb-3">
+                    <div class="info-box h-100">
                         <span class="info-box-icon" id="icon-risk"><i class="bi bi-shield-exclamation"></i></span>
                         <div class="info-box-content">
                             <span class="info-box-text">Total Risk</span>
-                            <span class="info-box-number" id="kpi-risk-val">--</span>
+                            <span class="info-box-number text-truncate" id="kpi-risk-val">--</span>
                             <span class="badge" id="kpi-risk-class">--</span>
                         </div>
                     </div>
                 </div>
                 <!-- GDP -->
-                <div class="col-sm-6 col-md-4 col-lg-4 col-xl-2">
-                    <div class="info-box">
+                <div class="col-sm-6 col-md-4 col-lg-4 col-xl-2 mb-3">
+                    <div class="info-box h-100">
                         <span class="info-box-icon bg-success"><i class="bi bi-bank"></i></span>
                         <div class="info-box-content">
                             <span class="info-box-text">GDP</span>
-                            <span class="info-box-number" id="kpi-gdp">--</span>
+                            <span class="info-box-number text-truncate" id="kpi-gdp">--</span>
                         </div>
                     </div>
                 </div>
                 <!-- Inflation -->
-                <div class="col-sm-6 col-md-4 col-lg-4 col-xl-2">
-                    <div class="info-box">
+                <div class="col-sm-6 col-md-4 col-lg-4 col-xl-2 mb-3">
+                    <div class="info-box h-100">
                         <span class="info-box-icon bg-warning text-dark"><i class="bi bi-graph-up-arrow"></i></span>
                         <div class="info-box-content">
                             <span class="info-box-text">Inflation</span>
-                            <span class="info-box-number" id="kpi-inflation">--</span>
+                            <span class="info-box-number text-truncate" id="kpi-inflation">--</span>
                         </div>
                     </div>
                 </div>
                 <!-- Population -->
-                <div class="col-sm-6 col-md-4 col-lg-4 col-xl-2">
-                    <div class="info-box">
+                <div class="col-sm-6 col-md-4 col-lg-4 col-xl-2 mb-3">
+                    <div class="info-box h-100">
                         <span class="info-box-icon bg-info"><i class="bi bi-people"></i></span>
                         <div class="info-box-content">
                             <span class="info-box-text">Population</span>
-                            <span class="info-box-number" id="kpi-population">--</span>
+                            <span class="info-box-number text-truncate" id="kpi-population">--</span>
+                        </div>
+                    </div>
+                </div>
+                <!-- Export -->
+                <div class="col-sm-6 col-md-4 col-lg-4 col-xl-2 mb-3">
+                    <div class="info-box h-100">
+                        <span class="info-box-icon bg-success"><i class="bi bi-box-arrow-up-right"></i></span>
+                        <div class="info-box-content">
+                            <span class="info-box-text">Export</span>
+                            <span class="info-box-number text-truncate" id="kpi-export">--</span>
+                        </div>
+                    </div>
+                </div>
+                <!-- Import -->
+                <div class="col-sm-6 col-md-4 col-lg-4 col-xl-2 mb-3">
+                    <div class="info-box h-100">
+                        <span class="info-box-icon bg-danger"><i class="bi bi-box-arrow-in-down-left"></i></span>
+                        <div class="info-box-content">
+                            <span class="info-box-text">Import</span>
+                            <span class="info-box-number text-truncate" id="kpi-import">--</span>
                         </div>
                     </div>
                 </div>
                 <!-- Currency -->
-                <div class="col-sm-6 col-md-4 col-lg-4 col-xl-2">
-                    <div class="info-box">
+                <div class="col-sm-6 col-md-4 col-lg-4 col-xl-2 mb-3">
+                    <div class="info-box h-100">
                         <span class="info-box-icon bg-secondary"><i class="bi bi-cash-coin"></i></span>
                         <div class="info-box-content">
                             <span class="info-box-text" id="kpi-currency-name">Currency</span>
-                            <span class="info-box-number" id="kpi-currency-rate">--</span>
+                            <span class="info-box-number text-truncate" id="kpi-currency-rate">--</span>
                         </div>
                     </div>
                 </div>
                 <!-- Weather -->
-                <div class="col-sm-6 col-md-4 col-lg-4 col-xl-2">
-                    <div class="info-box">
+                <div class="col-sm-6 col-md-4 col-lg-4 col-xl-2 mb-3">
+                    <div class="info-box h-100">
                         <span class="info-box-icon bg-primary" id="icon-weather"><i class="bi bi-cloud-sun"></i></span>
                         <div class="info-box-content">
                             <span class="info-box-text">Weather</span>

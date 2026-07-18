@@ -31,63 +31,82 @@ class ApiController extends Controller
      */
     public function countries(): JsonResponse
     {
-        set_time_limit(120);
-        $countries = DB::table('countries')->get();
-        $data = [];
-
-        foreach ($countries as $c) {
-            // Update / Enrich data dynamically with World Bank API (caching handled in service)
-            $wb = $this->apiService->getWorldBankData($c->iso_code);
+        $countries = DB::table('countries')
+            ->select('id', 'name', 'iso_code')
+            ->orderBy('name', 'asc')
+            ->get();
             
-            $gdp = $wb['gdp'] ?? $c->gdp;
-            $inflation = $wb['inflation'] ?? $c->inflation;
-            $population = $wb['population'] ?? $c->population;
+        return response()->json($countries);
+    }
 
-            // Save back changes if updated
-            if ($gdp != $c->gdp || $inflation != $c->inflation) {
-                DB::table('countries')->where('id', $c->id)->update([
-                    'gdp' => $gdp,
-                    'inflation' => $inflation,
-                    'population' => $population,
-                    'updated_at' => now(),
-                ]);
-            }
+    /**
+     * GET /api/country/{iso}
+     * Get full detailed metrics for a single country.
+     */
+    public function country($iso): JsonResponse
+    {
+        set_time_limit(60);
+        $c = DB::table('countries')->where('iso_code', $iso)->first();
+        if (!$c) return response()->json(['error' => 'Not found'], 404);
 
-            // Get weather for capitals / centroids of countries (approximate coordinates)
-            $coords = $this->getCentroid($c->iso_code);
-            $weather = $this->apiService->getWeather($coords[0], $coords[1]);
+        // Update / Enrich data dynamically with World Bank API
+        $wb = $this->apiService->getWorldBankData($c->iso_code);
+        
+        $gdp = $wb['gdp'] ?? $c->gdp;
+        $inflation = $wb['inflation'] ?? $c->inflation;
+        $population = $wb['population'] ?? $c->population;
 
-            // Get currency rate against USD
-            $fx = 1.0;
-            if ($c->currency_code !== 'USD') {
-                $fx = $this->apiService->getExchangeRate('USD', $c->currency_code);
-            }
+        // Fetch REST Countries data
+        $restCountries = $this->apiService->getRestCountriesData($c->iso_code);
+        $region = $restCountries['region'] ?? $c->region;
+        $language = $restCountries['language'] ?? $c->language;
 
-            // Calculate live score
-            $scoreDetails = $this->riskEngine->calculate(
-                $weather['storm_risk'],
-                $inflation * 10, // scaled as index
-                rand(10, 40),     // currency stability index
-                rand(15, 60)      // sentiment index fallback
-            );
-
-            $data[] = [
-                'id' => $c->id,
-                'name' => $c->name,
-                'iso_code' => $c->iso_code,
-                'currency' => $c->currency_code,
-                'exchange_rate' => $fx,
-                'region' => $c->region,
-                'language' => $c->language,
-                'population' => $population,
+        // Save back changes if updated
+        if ($gdp != $c->gdp || $inflation != $c->inflation || $region != $c->region || $language != $c->language) {
+            DB::table('countries')->where('id', $c->id)->update([
                 'gdp' => $gdp,
                 'inflation' => $inflation,
-                'weather' => $weather,
-                'risk' => $scoreDetails
-            ];
+                'population' => $population,
+                'region' => $region,
+                'language' => $language,
+                'updated_at' => now(),
+            ]);
         }
 
-        return response()->json($data);
+        // Get weather for capitals / centroids of countries (approximate coordinates)
+        $coords = $this->getCentroid($c->iso_code);
+        $weather = $this->apiService->getWeather($coords[0], $coords[1]);
+
+        // Get currency rate against USD
+        $fx = 1.0;
+        if ($c->currency_code !== 'USD') {
+            $fx = $this->apiService->getExchangeRate('USD', $c->currency_code);
+        }
+
+        // Calculate live score
+        $scoreDetails = $this->riskEngine->calculate(
+            $weather['storm_risk'],
+            $inflation * 10,
+            rand(10, 40),
+            rand(15, 60)
+        );
+
+        return response()->json([
+            'id' => $c->id,
+            'name' => $c->name,
+            'iso_code' => $c->iso_code,
+            'currency' => $c->currency_code,
+            'exchange_rate' => $fx,
+            'region' => $region,
+            'language' => $language,
+            'population' => $population,
+            'gdp' => $gdp,
+            'inflation' => $inflation,
+            'export' => $wb['export'] ?? null,
+            'import' => $wb['import'] ?? null,
+            'weather' => $weather,
+            'risk' => $scoreDetails
+        ]);
     }
 
     /**
@@ -146,9 +165,10 @@ class ApiController extends Controller
     {
         $countryCode = $request->query('country', 'ID');
         $country = DB::table('countries')->where('iso_code', $countryCode)->first();
-        $q = 'logistics OR business';
+        
+        $q = 'economy OR trade OR business';
         if ($country) {
-            $q .= ' ' . strtolower($country->name);
+            $q .= ' "' . $country->name . '"';
         }
 
         $articles = $this->apiService->getGNews($q);
