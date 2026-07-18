@@ -198,12 +198,15 @@ async function loadNewsData() {
             if (a.sentiment === 'Negative') badgeColor = 'bg-danger';
             
             html += `
-                <div class="news-item px-3">
-                    <a href="${a.url}" target="_blank" class="news-title">${a.title}</a>
-                    <div class="news-desc">${a.description || ''}</div>
-                    <div class="d-flex justify-content-between align-items-center">
-                        <small class="text-muted"><i class="bi bi-clock"></i> ${new Date(a.published_at).toLocaleDateString()} &middot; ${a.source}</small>
-                        <span class="badge ${badgeColor} badge-sentiment">${a.sentiment} (${a.positive_pct}%)</span>
+                <div class="news-item px-3 mb-3 d-flex gap-3 border-bottom pb-2">
+                    ${a.image ? `<img src="${a.image}" alt="news image" class="rounded shadow-sm" style="width: 90px; height: 90px; object-fit: cover;">` : ''}
+                    <div class="flex-grow-1">
+                        <a href="${a.url}" target="_blank" class="news-title fw-bold text-decoration-none">${a.title}</a>
+                        <div class="news-desc text-muted small mt-1">${a.description || ''}</div>
+                        <div class="d-flex justify-content-between align-items-center mt-2">
+                            <small class="text-muted"><i class="bi bi-clock"></i> ${new Date(a.published_at).toLocaleDateString()} &middot; ${a.source}</small>
+                            <span class="badge ${badgeColor} badge-sentiment">${a.sentiment} (${a.positive_pct}%)</span>
+                        </div>
                     </div>
                 </div>
             `;

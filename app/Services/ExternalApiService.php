@@ -193,10 +193,10 @@ class ExternalApiService
      */
     public function getGNews(string $query = 'supply chain logistics'): array
     {
-        $cacheKey = "gnews_" . md5($query);
+        $cacheKey = "gnews_en8_" . md5($query); // bypass old cache
         return Cache::remember($cacheKey, 7200, function () use ($query) {
             $apiKey = env('GNEWS_API_KEY');
-            if (!$apiKey) {
+            if (!$apiKey || $apiKey === 'YOUR_GNEWS_API_KEY_HERE') {
                 return $this->getMockNews();
             }
 
@@ -205,13 +205,22 @@ class ExternalApiService
                     'q' => $query,
                     'lang' => 'en',
                     'apikey' => $apiKey,
-                    'max' => 5
+                    'max' => 3
                 ]);
 
                 if ($response->successful()) {
                     return $response->json()['articles'] ?? [];
                 }
+                
+                // If we reach here, it means the API request failed (e.g. wrong key, rate limit)
+                // We should clear this cache immediately so it doesn't cache the failure
+                Cache::forget($cacheKey);
+                
+                // You can temporarily uncomment the line below to debug what error GNews is giving
+                // throw new \Exception('GNews API Error: ' . $response->body());
+
             } catch (\Exception $e) {
+                Cache::forget($cacheKey);
                 // Fallback to mock
             }
 

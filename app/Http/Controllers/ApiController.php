@@ -146,7 +146,7 @@ class ApiController extends Controller
     {
         $countryCode = $request->query('country', 'ID');
         $country = DB::table('countries')->where('iso_code', $countryCode)->first();
-        $q = 'supply chain logistics';
+        $q = 'logistics OR business';
         if ($country) {
             $q .= ' ' . strtolower($country->name);
         }
@@ -165,6 +165,7 @@ class ApiController extends Controller
                 'title' => $title,
                 'description' => $desc,
                 'url' => $art['url'] ?? '#',
+                'image' => $art['image'] ?? null,
                 'source' => $art['source']['name'] ?? 'News',
                 'published_at' => $art['publishedAt'] ?? now()->toIso8601String(),
                 'sentiment' => $analysis['sentiment'],
