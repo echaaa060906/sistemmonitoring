@@ -31,10 +31,23 @@ class ApiController extends Controller
      */
     public function countries(): JsonResponse
     {
-        $countries = DB::table('countries')
-            ->select('id', 'name', 'iso_code')
-            ->orderBy('name', 'asc')
-            ->get();
+        $userId = auth()->id();
+        
+        if ($userId) {
+            $countries = DB::table('countries')
+                ->leftJoin('watchlists', function($join) use ($userId) {
+                    $join->on('countries.id', '=', 'watchlists.country_id')
+                         ->where('watchlists.user_id', '=', $userId);
+                })
+                ->select('countries.id', 'countries.name', 'countries.iso_code', DB::raw('IF(watchlists.id IS NOT NULL, 1, 0) as is_favorite'))
+                ->orderBy('countries.name', 'asc')
+                ->get();
+        } else {
+            $countries = DB::table('countries')
+                ->select('id', 'name', 'iso_code', DB::raw('0 as is_favorite'))
+                ->orderBy('name', 'asc')
+                ->get();
+        }
             
         return response()->json($countries);
     }
@@ -73,8 +86,8 @@ class ApiController extends Controller
             ]);
         }
 
-        // Get weather for capitals / centroids of countries (approximate coordinates)
-        $coords = $this->getCentroid($c->iso_code);
+        // Get weather for capitals using precise coordinates from external JSON
+        $coords = $this->apiService->getCapitalCoordinates($c->iso_code);
         $weather = $this->apiService->getWeather($coords[0], $coords[1]);
 
         // Get currency rate against USD
@@ -91,10 +104,20 @@ class ApiController extends Controller
             rand(15, 60)
         );
 
+        $userId = auth()->id();
+        $is_favorite = false;
+        if ($userId) {
+            $is_favorite = DB::table('watchlists')
+                ->where('user_id', $userId)
+                ->where('country_id', $c->id)
+                ->exists();
+        }
+
         return response()->json([
             'id' => $c->id,
             'name' => $c->name,
             'iso_code' => $c->iso_code,
+            'is_favorite' => $is_favorite,
             'currency' => $c->currency_code,
             'exchange_rate' => $fx,
             'region' => $region,
@@ -166,6 +189,35 @@ class ApiController extends Controller
         $countryCode = $request->query('country', 'ID');
         $country = DB::table('countries')->where('iso_code', $countryCode)->first();
         
+        // 1. Check database cache
+        $cachedNews = DB::table('news_cache')
+            ->where('country_code', $countryCode)
+            ->where('created_at', '>=', now()->subHours(2))
+            ->get();
+
+        if ($cachedNews->isNotEmpty()) {
+            $result = $cachedNews->map(function($news) {
+                $total = $news->positive_count + $news->negative_count;
+                // Avoid division by zero
+                $totalDiv = $total == 0 ? 1 : $total;
+                
+                return [
+                    'title' => $news->title,
+                    'description' => $news->description,
+                    'url' => $news->url,
+                    'image' => $news->image,
+                    'source' => $news->source,
+                    'published_at' => $news->published_at,
+                    'sentiment' => $news->sentiment_result,
+                    'positive_score' => $news->positive_count,
+                    'negative_score' => $news->negative_count,
+                    'positive_pct' => round(($news->positive_count / $totalDiv) * 100),
+                    'negative_pct' => round(($news->negative_count / $totalDiv) * 100)
+                ];
+            });
+            return response()->json($result);
+        }
+        
         $q = 'economy OR trade OR business';
         if ($country) {
             $q .= ' "' . $country->name . '"';
@@ -174,20 +226,43 @@ class ApiController extends Controller
         $articles = $this->apiService->getGNews($q);
         $result = [];
 
+        // Clear old cache for this country
+        DB::table('news_cache')->where('country_code', $countryCode)->delete();
+
         foreach ($articles as $art) {
             $title = $art['title'] ?? '';
             $desc = $art['description'] ?? '';
+            $url = $art['url'] ?? '#';
+            $image = $art['image'] ?? null;
+            $source = $art['source']['name'] ?? 'News';
+            $pubAt = \Carbon\Carbon::parse($art['publishedAt'] ?? now())->toDateTimeString();
             
             // Lexicon sentiment analysis
             $analysis = $this->sentimentEngine->analyze($title . ' ' . $desc);
 
+            // 3. Store in DB
+            DB::table('news_cache')->insert([
+                'country_code' => $countryCode,
+                'title' => $title,
+                'description' => $desc,
+                'url' => $url,
+                'image' => $image,
+                'source' => $source,
+                'sentiment_result' => $analysis['sentiment'],
+                'positive_count' => $analysis['positive_score'],
+                'negative_count' => $analysis['negative_score'],
+                'published_at' => $pubAt,
+                'created_at' => now(),
+                'updated_at' => now()
+            ]);
+
             $result[] = [
                 'title' => $title,
                 'description' => $desc,
-                'url' => $art['url'] ?? '#',
-                'image' => $art['image'] ?? null,
-                'source' => $art['source']['name'] ?? 'News',
-                'published_at' => $art['publishedAt'] ?? now()->toIso8601String(),
+                'url' => $url,
+                'image' => $image,
+                'source' => $source,
+                'published_at' => $pubAt,
                 'sentiment' => $analysis['sentiment'],
                 'positive_score' => $analysis['positive_score'],
                 'negative_score' => $analysis['negative_score'],
@@ -223,16 +298,58 @@ class ApiController extends Controller
         ]);
     }
 
+    /**
+     * POST /api/country/{iso}/favorite
+     * Toggle the favorite status of a country.
+     */
+    public function toggleFavorite($iso): JsonResponse
+    {
+        $c = DB::table('countries')->where('iso_code', $iso)->first();
+        if (!$c) return response()->json(['error' => 'Not found'], 404);
+
+        $userId = auth()->id();
+        if (!$userId) return response()->json(['error' => 'Unauthenticated'], 401);
+
+        $exists = DB::table('watchlists')
+            ->where('user_id', $userId)
+            ->where('country_id', $c->id)
+            ->first();
+
+        $newStatus = false;
+        if ($exists) {
+            DB::table('watchlists')->where('id', $exists->id)->delete();
+        } else {
+            DB::table('watchlists')->insert([
+                'user_id' => $userId,
+                'country_id' => $c->id,
+                'created_at' => now(),
+                'updated_at' => now()
+            ]);
+            $newStatus = true;
+        }
+
+        return response()->json([
+            'iso_code' => $iso,
+            'is_favorite' => $newStatus
+        ]);
+    }
+
     private function getCentroid(string $iso): array
     {
-        $centroids = [
-            'ID' => [-6.20, 106.84],
-            'DE' => [52.52, 13.40],
-            'CN' => [39.90, 116.40],
-            'AU' => [-33.86, 151.20], // Sydney
-            'US' => [38.90, -77.03],
+        // Coordinates for the capital city of each country
+        $capitals = [
+            'ID' => [-6.2088, 106.8456], // Jakarta
+            'DE' => [52.5200, 13.4050],  // Berlin
+            'CN' => [39.9042, 116.4074], // Beijing
+            'AU' => [-35.2809, 149.1300], // Canberra
+            'US' => [38.9072, -77.0369], // Washington, D.C.
+            'JP' => [35.6762, 139.6503], // Tokyo
+            'SG' => [1.3521, 103.8198],  // Singapore
+            'KR' => [37.5665, 126.9780], // Seoul
+            'IN' => [28.6139, 77.2090],  // New Delhi
+            'GB' => [51.5074, -0.1278],  // London
         ];
 
-        return $centroids[$iso] ?? [0.0, 0.0];
+        return $capitals[$iso] ?? [0.0, 0.0];
     }
 }

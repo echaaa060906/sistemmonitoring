@@ -97,6 +97,12 @@ class FetchCountriesCommand extends Command
                             'updated_at' => now()
                         ]);
                         $count++;
+                    } else if ($existing->region === 'Data tidak tersedia' || $existing->language === 'Data tidak tersedia') {
+                        DB::table('countries')->where('id', $existing->id)->update([
+                            'region' => $fullRegion,
+                            'language' => $language
+                        ]);
+                        $this->info("Fixed Region/Language for {$name}");
                     }
                 }
             }

@@ -20,7 +20,32 @@ document.addEventListener('DOMContentLoaded', () => {
     // Initial load
     loadDashboardData();
     loadNewsData();
+
+    // Favorite Star Logic
+    document.getElementById('favorite-star').addEventListener('click', async (e) => {
+        try {
+            const res = await fetch(`/api/country/${currentCountry}/favorite`, { method: 'POST' });
+            const data = await res.json();
+            if (data && !data.error) {
+                updateStarIcon(data.is_favorite);
+            }
+        } catch (err) {
+            console.error('Error toggling favorite', err);
+        }
+    });
 });
+
+function updateStarIcon(isFavorite) {
+    const star = document.getElementById('favorite-star');
+    star.style.display = 'inline-block';
+    if (isFavorite) {
+        star.classList.remove('bi-star');
+        star.classList.add('bi-star-fill');
+    } else {
+        star.classList.remove('bi-star-fill');
+        star.classList.add('bi-star');
+    }
+}
 
 // -- MAP LOGIC --
 function initMap() {
@@ -167,11 +192,13 @@ function updateMetrics(c) {
         return '$' + (val / 1e6).toFixed(1) + 'M';
     }
 
-    document.getElementById('kpi-gdp').textContent = formatMoney(c.gdp);
-    document.getElementById('kpi-inflation').textContent = c.inflation.toFixed(1) + '%';
-    document.getElementById('kpi-population').textContent = (c.population / 1e6).toFixed(1) + 'M';
-    document.getElementById('kpi-export').textContent = formatMoney(c.export);
-    document.getElementById('kpi-import').textContent = formatMoney(c.import);
+    updateStarIcon(c.is_favorite);
+
+    document.getElementById('kpi-gdp').textContent = (c.gdp === 0 || c.gdp == null) ? 'N/A' : formatMoney(c.gdp);
+    document.getElementById('kpi-inflation').textContent = (c.inflation === 0 || c.inflation == null) ? 'N/A' : c.inflation.toFixed(1) + '%';
+    document.getElementById('kpi-population').textContent = (c.population === 0 || c.population == null) ? 'N/A' : (c.population / 1e6).toFixed(1) + 'M';
+    document.getElementById('kpi-export').textContent = (c.export === 0 || c.export == null) ? 'N/A' : formatMoney(c.export);
+    document.getElementById('kpi-import').textContent = (c.import === 0 || c.import == null) ? 'N/A' : formatMoney(c.import);
     
     document.getElementById('country-meta').style.display = 'inline-block';
     document.getElementById('kpi-region').innerHTML = `<i class="bi bi-globe"></i> ${c.region || 'N/A'}`;

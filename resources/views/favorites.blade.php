@@ -3,39 +3,118 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Watchlist - Supply Chain Risk</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <title>Watchlist - Global Supply Chain Risk Intelligence Platform</title>
+    
+    <!-- Standard Bootstrap 5 -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Standard Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
     
     <style>
-        :root { --bg-color: #f8f9fa; --sidebar-bg: #1e293b; --sidebar-color: #cbd5e1; --primary: #2563eb; }
-        body { font-family: 'Inter', sans-serif; background-color: var(--bg-color); display: flex; width: 100vw; height: 100vh; overflow: hidden; }
-        #sidebar { width: 250px; background: var(--sidebar-bg); color: var(--sidebar-color); display: flex; flex-direction: column; flex-shrink: 0; }
-        .sidebar-brand { padding: 1.5rem 1.25rem; font-size: 1.1rem; font-weight: 700; color: #fff; border-bottom: 1px solid rgba(255,255,255,0.1); }
-        .sidebar-nav { padding: 1rem 0; list-style: none; margin: 0; }
-        .sidebar-link { display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem 1.25rem; color: var(--sidebar-color); text-decoration: none; font-weight: 500; }
-        .sidebar-link:hover, .sidebar-link.active { background: rgba(255,255,255,0.05); color: #fff; border-left: 3px solid var(--primary); }
-        #main-content { flex: 1; display: flex; flex-direction: column; overflow-y: auto; }
-        #topbar { background: #fff; padding: 1rem 1.5rem; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; }
-        .card { border: none; border-radius: 0.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+        :root {
+            --primary-color: #0d6efd;
+            --sidebar-bg: #343a40;
+            --bg-color: #f4f6f9;
+        }
+
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: var(--bg-color);
+            overflow-x: hidden;
+        }
+
+        /* Layout */
+        #wrapper { display: flex; width: 100vw; height: 100vh; overflow: hidden; }
+        
+        /* Sidebar (Standard Admin Style) */
+        #sidebar {
+            width: 250px;
+            background-color: var(--sidebar-bg);
+            color: #fff;
+            display: flex;
+            flex-direction: column;
+            flex-shrink: 0;
+            box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+        }
+        .sidebar-brand {
+            padding: 1.25rem 1rem;
+            font-size: 1.1rem;
+            font-weight: 700;
+            text-align: center;
+            border-bottom: 1px solid #4f5962;
+            background-color: #212529;
+        }
+        .sidebar-nav { padding: 0; list-style: none; margin-top: 1rem; }
+        .sidebar-link {
+            display: block;
+            padding: 0.8rem 1.25rem;
+            color: #c2c7d0;
+            text-decoration: none;
+            transition: 0.2s;
+        }
+        .sidebar-link i { margin-right: 10px; width: 20px; text-align: center; }
+        .sidebar-link:hover, .sidebar-link.active {
+            color: #fff;
+            background-color: rgba(255,255,255,0.1);
+            border-left: 4px solid var(--primary-color);
+        }
+
+        /* Main Content */
+        #main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+        }
+        
+        /* Header */
+        #topbar {
+            background-color: #fff;
+            padding: 1rem 1.5rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 10;
+        }
+
+        /* Cards */
+        .card {
+            border: none;
+            border-radius: 0.25rem;
+            box-shadow: 0 0 1px rgba(0,0,0,.125), 0 1px 3px rgba(0,0,0,.2);
+            margin-bottom: 1.5rem;
+        }
     </style>
 </head>
 <body>
+
+<div id="wrapper">
+    <!-- Sidebar -->
     <aside id="sidebar">
-        <div class="sidebar-brand"><i class="bi bi-globe-americas"></i> RiskIntel</div>
+        <div class="sidebar-brand">
+            <i class="bi bi-globe-americas"></i> SCM Project
+        </div>
         <ul class="sidebar-nav">
-            <li><a href="/" class="sidebar-link"><i class="bi bi-grid-1x2"></i> Country Dashboard</a></li>
+            <li><a href="/" class="sidebar-link"><i class="bi bi-speedometer2"></i> Global Dashboard</a></li>
+            <li><a href="/map" class="sidebar-link"><i class="bi bi-map"></i> Peta Rute</a></li>
             <li><a href="/ports" class="sidebar-link"><i class="bi bi-geo-alt"></i> Port Locations</a></li>
-            <li><a href="/comparison" class="sidebar-link"><i class="bi bi-arrow-left-right"></i> Comparison Engine</a></li>
-            <li><a href="/favorites" class="sidebar-link active"><i class="bi bi-star"></i> Watchlist</a></li>
-            <li><a href="/admin" class="sidebar-link"><i class="bi bi-gear"></i> Admin Dashboard</a></li>
+            <li><a href="/comparison" class="sidebar-link"><i class="bi bi-intersect"></i> Comparison</a></li>
+            <li><a href="/favorites" class="sidebar-link active"><i class="bi bi-star"></i> Favorites List</a></li>
+            <li><a href="/admin" class="sidebar-link"><i class="bi bi-gear"></i> Admin Panel</a></li>
         </ul>
     </aside>
 
+    <!-- Main Content -->
     <main id="main-content">
+        <!-- Header -->
         <header id="topbar">
-            <div><h5 class="mb-0 fw-bold">Favorite Monitoring List</h5><small class="text-muted">Your saved countries</small></div>
+            <div>
+                <h5 class="mb-0 fw-bold">Favorite Monitoring List</h5>
+                <small class="text-muted">Your saved countries</small>
+            </div>
             
             <div class="d-flex align-items-center">
                 @auth
@@ -55,15 +134,49 @@
                 @endauth
             </div>
         </header>
+
+        <!-- Content Body -->
         <div class="container-fluid p-4">
-            <div class="card p-4 text-center">
-                <i class="bi bi-star text-warning" style="font-size: 3rem;"></i>
-                <h5 class="mt-3">Your Watchlist is Empty</h5>
-                <p class="text-muted">Go to the Global Dashboard to add countries to your watchlist.</p>
-                <div><a href="/" class="btn btn-primary mt-2">Go to Dashboard</a></div>
-            </div>
+            @if(count($favorites) > 0)
+                <div class="row">
+                    @foreach($favorites as $fav)
+                    <div class="col-md-4 mb-4">
+                        <div class="card h-100 p-3 shadow-sm border-0" style="border-top: 4px solid var(--primary-color) !important;">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <h5 class="fw-bold mb-0">{{ $fav->name }}</h5>
+                                <span class="badge bg-secondary">{{ $fav->iso_code }}</span>
+                            </div>
+                            <hr>
+                            <div class="mb-2">
+                                <small class="text-muted d-block">Region</small>
+                                <span class="fw-medium">{{ $fav->region }}</span>
+                            </div>
+                            <div class="mb-2">
+                                <small class="text-muted d-block">Currency</small>
+                                <span class="fw-medium">{{ $fav->currency_code }}</span>
+                            </div>
+                            <div>
+                                <small class="text-muted d-block">GDP</small>
+                                <span class="fw-medium text-success">${{ number_format($fav->gdp / 1000000000, 2) }} B</span>
+                            </div>
+                        </div>
+                    </div>
+                    @endforeach
+                </div>
+            @else
+                <div class="card p-5 text-center shadow-sm">
+                    <i class="bi bi-star-fill text-warning mb-3" style="font-size: 4rem;"></i>
+                    <h4 class="fw-bold">Your Watchlist is Empty</h4>
+                    <p class="text-muted mb-4">Go to the Global Dashboard to add countries to your watchlist.</p>
+                    <div>
+                        <a href="/" class="btn btn-primary"><i class="bi bi-arrow-left"></i> Back to Dashboard</a>
+                    </div>
+                </div>
+            @endif
         </div>
     </main>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

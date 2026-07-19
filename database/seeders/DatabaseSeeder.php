@@ -137,6 +137,33 @@ class DatabaseSeeder extends Seeder
             // Singapore (SG)
             ['name' => 'Port of Singapore', 'country' => 'Singapore', 'latitude' => 1.26, 'longitude' => 103.82, 'code' => 'SGSIN'],
             ['name' => 'Jurong Port', 'country' => 'Singapore', 'latitude' => 1.30, 'longitude' => 103.72, 'code' => 'SGJUR'],
+
+            // South Korea (KR)
+            ['name' => 'Port of Busan', 'country' => 'South Korea', 'latitude' => 35.10, 'longitude' => 129.04, 'code' => 'KRPUS'],
+            ['name' => 'Port of Incheon', 'country' => 'South Korea', 'latitude' => 37.45, 'longitude' => 126.62, 'code' => 'KRINC'],
+
+            // Netherlands (NL)
+            ['name' => 'Port of Rotterdam', 'country' => 'Netherlands', 'latitude' => 51.95, 'longitude' => 4.05, 'code' => 'NLRTM'],
+            ['name' => 'Port of Amsterdam', 'country' => 'Netherlands', 'latitude' => 52.40, 'longitude' => 4.80, 'code' => 'NLAMS'],
+
+            // United Kingdom (GB)
+            ['name' => 'Port of Felixstowe', 'country' => 'United Kingdom', 'latitude' => 51.95, 'longitude' => 1.31, 'code' => 'GBFXT'],
+            ['name' => 'Port of Southampton', 'country' => 'United Kingdom', 'latitude' => 50.89, 'longitude' => -1.40, 'code' => 'GBSOU'],
+            ['name' => 'Port of London', 'country' => 'United Kingdom', 'latitude' => 51.50, 'longitude' => 0.05, 'code' => 'GBLON'],
+
+            // India (IN)
+            ['name' => 'Jawaharlal Nehru Port (Nhava Sheva)', 'country' => 'India', 'latitude' => 18.94, 'longitude' => 72.95, 'code' => 'INNSA'],
+            ['name' => 'Chennai Port', 'country' => 'India', 'latitude' => 13.08, 'longitude' => 80.29, 'code' => 'INMAA'],
+            ['name' => 'Mundra Port', 'country' => 'India', 'latitude' => 22.74, 'longitude' => 69.70, 'code' => 'INMUN'],
+
+            // Brazil (BR)
+            ['name' => 'Port of Santos', 'country' => 'Brazil', 'latitude' => -23.97, 'longitude' => -46.29, 'code' => 'BRSSZ'],
+            ['name' => 'Port of Rio de Janeiro', 'country' => 'Brazil', 'latitude' => -22.88, 'longitude' => -43.20, 'code' => 'BRRIO'],
+
+            // Malaysia (MY)
+            ['name' => 'Port Klang', 'country' => 'Malaysia', 'latitude' => 2.99, 'longitude' => 101.39, 'code' => 'MYPKG'],
+            ['name' => 'Port of Tanjung Pelepas', 'country' => 'Malaysia', 'latitude' => 1.36, 'longitude' => 103.54, 'code' => 'MYTPP'],
+            ['name' => 'Penang Port', 'country' => 'Malaysia', 'latitude' => 5.41, 'longitude' => 100.34, 'code' => 'MYPEN'],
         ];
 
         foreach ($ports as $p) {

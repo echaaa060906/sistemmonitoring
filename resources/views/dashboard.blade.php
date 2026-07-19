@@ -179,7 +179,10 @@
         <!-- Header -->
         <header id="topbar">
             <div>
-                <h4 class="mb-0 text-dark">Global Country Dashboard</h4>
+                <h4 class="mb-0 text-dark d-flex align-items-center">
+                    Global Country Dashboard 
+                    <i class="bi bi-star ms-2 text-warning" id="favorite-star" style="cursor: pointer; display: none;" title="Toggle Favorite"></i>
+                </h4>
                 <small class="text-muted">Supply Chain Risk Monitoring</small>
                 <div class="mt-1" id="country-meta" style="display: none;">
                     <span class="badge bg-secondary me-1" id="kpi-region"><i class="bi bi-globe"></i> --</span>

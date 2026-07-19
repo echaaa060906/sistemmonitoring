@@ -141,16 +141,31 @@
             compare();
         }
 
-        function compare() {
+        async function compare() {
             if (countriesData.length === 0) return;
             const ca = document.getElementById('countryA').value;
             const cb = document.getElementById('countryB').value;
 
-            const dataA = countriesData.find(c => c.iso_code === ca);
-            const dataB = countriesData.find(c => c.iso_code === cb);
+            document.getElementById('loader').style.display = 'block';
+            document.getElementById('compare-results').style.opacity = '0.5';
 
-            if(dataA) fillCard('A', dataA);
-            if(dataB) fillCard('B', dataB);
+            try {
+                const [resA, resB] = await Promise.all([
+                    fetch('/api/country/' + ca),
+                    fetch('/api/country/' + cb)
+                ]);
+                
+                const dataA = await resA.json();
+                const dataB = await resB.json();
+
+                if(!dataA.error) fillCard('A', dataA);
+                if(!dataB.error) fillCard('B', dataB);
+            } catch(e) {
+                console.error(e);
+            } finally {
+                document.getElementById('loader').style.display = 'none';
+                document.getElementById('compare-results').style.opacity = '1';
+            }
         }
 
         function fillCard(side, c) {
