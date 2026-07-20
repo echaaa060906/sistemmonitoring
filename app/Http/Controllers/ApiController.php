@@ -70,7 +70,7 @@ class ApiController extends Controller
         $population = $wb['population'] ?? $c->population;
 
         // Fetch REST Countries data
-        $restCountries = $this->apiService->getRestCountriesData($c->iso_code);
+        $restCountries = $this->apiService->getRestCountriesData($c->iso_code, $c->name);
         $region = $restCountries['region'] ?? $c->region;
         $language = $restCountries['language'] ?? $c->language;
 
@@ -88,6 +88,9 @@ class ApiController extends Controller
 
         // Get weather for capitals using precise coordinates from external JSON
         $coords = $this->apiService->getCapitalCoordinates($c->iso_code);
+        if ($coords[0] === 0.0 && $coords[1] === 0.0 && isset($restCountries['lat']) && $restCountries['lat'] !== 0.0) {
+            $coords = [$restCountries['lat'], $restCountries['lon']];
+        }
         $weather = $this->apiService->getWeather($coords[0], $coords[1]);
 
         // Get currency rate against USD
@@ -128,6 +131,7 @@ class ApiController extends Controller
             'export' => $wb['export'] ?? null,
             'import' => $wb['import'] ?? null,
             'weather' => $weather,
+            'coords' => $coords,
             'risk' => $scoreDetails
         ]);
     }

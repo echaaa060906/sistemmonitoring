@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Map Error</title>
+</head>
+<body>
+    <script>
+        window.onerror = function(message, source, lineno, colno, error) {
+            fetch('/test_error_log.php?e=' + encodeURIComponent(message + ' at ' + lineno + ':' + colno));
+        };
+        fetch('/map')
+            .then(r => r.text())
+            .then(html => {
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(html, 'text/html');
+                const script = doc.querySelector('script:last-of-type');
+                if (script) {
+                    const newScript = document.createElement('script');
+                    newScript.text = script.text;
+                    document.body.appendChild(newScript);
+                }
+            });
+    </script>
+</body>
+</html>

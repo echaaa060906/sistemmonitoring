@@ -124,6 +124,23 @@
     </style>
 </head>
 <body>
+    <!-- ERROR LOGGER -->
+    <div id="debug-error" style="position:fixed;top:0;left:0;right:0;background:red;color:white;z-index:999999;padding:10px;font-family:monospace;white-space:pre-wrap;display:none;"></div>
+    <script>
+        window.onerror = function(msg, url, lineNo, columnNo, error) {
+            fetch('/test_error_log.php?e=' + encodeURIComponent(msg + ' at ' + lineNo + ':' + columnNo));
+            var el = document.getElementById('debug-error');
+            el.style.display = 'block';
+            el.innerHTML += msg + ' at ' + lineNo + ':' + columnNo + '<br>';
+            return false;
+        };
+        window.addEventListener('unhandledrejection', function(event) {
+            fetch('/test_error_log.php?e=' + encodeURIComponent('Unhandled Promise Rejection: ' + event.reason));
+            var el = document.getElementById('debug-error');
+            el.style.display = 'block';
+            el.innerHTML += 'Unhandled Promise Rejection: ' + event.reason + '<br>';
+        });
+    </script>
     <aside id="sidebar">
         <div class="sidebar-brand">
             <i class="bi bi-globe-americas"></i> SCM Project
@@ -315,27 +332,28 @@
             const originSel = document.getElementById('sim-origin');
             const destSel = document.getElementById('sim-dest');
             data.forEach(c => {
-                if(CENTROIDS[c.iso_code]) {
-                    const opt = `<option value="${c.iso_code}">${c.name}</option>`;
-                    originSel.innerHTML += opt;
-                    destSel.innerHTML += opt;
-                }
+                const opt = `<option value="${c.iso_code}">${c.name}</option>`;
+                originSel.innerHTML += opt;
+                destSel.innerHTML += opt;
             });
             destSel.innerHTML += `<option value="IDTPP">Tanjung Priok, ID</option>`;
             CENTROIDS["IDTPP"] = DEST;
             window.allCountriesData = data;
             
-            shipments = data.map((c,i)=>{
-                const orig=CENTROIDS[c.iso_code]||[0,0];
-                const prog=c.risk.total_risk>55?45:(c.risk.total_risk>35?72:100);
-                const stat=c.risk.total_risk>55?'Delayed':(c.risk.total_risk>35?'In Transit':'Arrived');
-                const t=prog/100;
-                const cur=[orig[0]+(DEST[0]-orig[0])*t*0.75, orig[1]+(DEST[1]-orig[1])*t*0.75];
-                return { id:`SH-2026-${9020+i}`, container:`CNTR-${c.iso_code}-${1029+i}`,
-                    carrier:({ID:'Samudera Indonesia',DE:'Hapag-Lloyd',CN:'COSCO',AU:'ANL',US:'ONE Line'}[c.iso_code]||'Global Carrier'),
-                    mode:c.iso_code==='DE'?'Land (Truck)':'Sea (Vessel)',
-                    origin:c.name, eta:'2026-07-15', status:stat, risk:c.risk.class,
-                    risk_score:c.risk.total_risk, progress:prog, origin_coord:orig, current_coord:cur };
+            // Only create default dummy shipments for hardcoded centroids
+            const defaultISOs = Object.keys(CENTROIDS).filter(k => k !== 'IDTPP');
+            shipments = defaultISOs.map((iso, i) => {
+                const c = data.find(x => x.iso_code === iso) || {name: iso};
+                const orig = CENTROIDS[iso];
+                const prog = Math.floor(Math.random() * 60) + 20; // 20-80%
+                const stat = prog > 70 ? 'In Transit' : (prog < 40 ? 'Delayed' : 'In Transit');
+                const t = prog / 100;
+                const cur = [orig[0]+(DEST[0]-orig[0])*t*0.75, orig[1]+(DEST[1]-orig[1])*t*0.75];
+                return { id:`SH-2026-${9020+i}`, container:`CNTR-${iso}-${1029+i}`,
+                    carrier:({ID:'Samudera Indonesia',DE:'Hapag-Lloyd',CN:'COSCO',AU:'ANL',US:'ONE Line'}[iso]||'Global Carrier'),
+                    mode:iso==='DE'?'Land (Truck)':'Sea (Vessel)',
+                    origin:c.name, eta:'2026-07-15', status:stat, risk:'Medium',
+                    risk_score: 45, progress:prog, origin_coord:orig, current_coord:cur };
             });
             renderRouteList();
             shipments.forEach(s=>addToMap(s));
@@ -351,13 +369,11 @@
     }
     
     let simInterval = null;
-    function startCustomSim() {
+    async function startCustomSim() {
         const o = document.getElementById('sim-origin').value;
         const d = document.getElementById('sim-dest').value;
         if(!o || !d || o === d) return alert("Pilih asal dan tujuan yang berbeda!");
     
-        const cOrigin = CENTROIDS[o];
-        const cDest = CENTROIDS[d];
         const simId = 'SIM-' + Math.floor(Math.random()*10000);
         
         let oName = o; let dName = d;
@@ -368,10 +384,38 @@
             if(cd) dName = cd.name;
         }
         if (d === 'IDTPP') dName = 'Tanjung Priok, ID';
+        
+        // Fetch dynamic coordinates and real risk score from API
+        let cOrigin = CENTROIDS[o];
+        let riskClass = 'Low';
+        let riskScore = 10;
+        
+        try {
+            const r = await fetch('/api/country/' + o);
+            const dta = await r.json();
+            if (dta && dta.coords) cOrigin = dta.coords;
+            if (dta && dta.risk) {
+                riskClass = dta.risk.class || 'Medium';
+                riskScore = dta.risk.total_risk || 45;
+            }
+        } catch(e) { console.error('Fetch error', e); }
+        
+        let cDest = CENTROIDS[d];
+        if (!cDest && d !== 'IDTPP') {
+            try {
+                const r = await fetch('/api/country/' + d);
+                const dta = await r.json();
+                if (dta && dta.coords) cDest = dta.coords;
+            } catch(e) { console.error('Fetch error', e); }
+        }
+        
+        // Fallbacks just in case
+        if (!cOrigin) cOrigin = [0, 0];
+        if (!cDest) cDest = DEST;
     
         const s = { 
             id: simId, container: `CUST-${o}-${d}`, carrier: 'Simulator Line', mode: 'Express',
-            origin: oName, dest_name: dName, eta: 'Real-time', status: 'In Transit', risk: 'Low', risk_score: 10,
+            origin: oName, dest_name: dName, eta: 'Real-time', status: 'In Transit', risk: riskClass, risk_score: riskScore,
             progress: 0, origin_coord: cOrigin, current_coord: cOrigin, dest_coord: cDest
         };
     

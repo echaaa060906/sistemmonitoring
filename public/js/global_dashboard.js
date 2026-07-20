@@ -174,7 +174,8 @@ async function loadDashboardData() {
         
         if (countryData && !countryData.error) {
             updateMetrics(countryData);
-            updateMap(countryData.weather, getCoords(currentCountry), currentCountry);
+            const latlng = countryData.coords || getCoords(currentCountry);
+            updateMap(countryData.weather, latlng, currentCountry);
             updateCharts(countryData);
         }
     } catch (e) {

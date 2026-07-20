@@ -187,15 +187,42 @@ class ExternalApiService
     /**
      * Get Country details from REST Countries API (Deprecated, returning nulls to fallback)
      */
-    public function getRestCountriesData(string $countryIso2): array
+    public function getRestCountriesData(string $countryIso2, string $countryName = null): array
     {
-        return [
-            'region' => null,
-            'language' => null,
-            'lat' => 0.0,
-            'lon' => 0.0,
-            'source' => 'Mock Data'
-        ];
+        $cacheKey = "country_coords_v3_{$countryIso2}"; // New cache key to bypass old mock cache
+        return Cache::remember($cacheKey, 86400, function () use ($countryIso2, $countryName) {
+            try {
+                // REST Countries is deprecated. Using Nominatim for coordinates.
+                $query = $countryName ? ['country' => $countryName, 'format' => 'json', 'limit' => 1] : ['q' => $countryIso2, 'format' => 'json', 'limit' => 1];
+                
+                $response = Http::withHeaders([
+                    'User-Agent' => 'SCM-Monitoring-App/1.0'
+                ])->withoutVerifying()->timeout(5)->get("https://nominatim.openstreetmap.org/search", $query);
+
+                if ($response->successful()) {
+                    $data = $response->json();
+                    if (isset($data[0])) {
+                        return [
+                            'region' => null,
+                            'language' => null,
+                            'lat' => (float) ($data[0]['lat'] ?? 0.0),
+                            'lon' => (float) ($data[0]['lon'] ?? 0.0),
+                            'source' => 'Nominatim API'
+                        ];
+                    }
+                }
+            } catch (\Exception $e) {
+                // Fallback on error
+            }
+
+            return [
+                'region' => null,
+                'language' => null,
+                'lat' => 0.0,
+                'lon' => 0.0,
+                'source' => 'Mock Data'
+            ];
+        });
     }
 
     /**
